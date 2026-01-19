@@ -1,4 +1,73 @@
-# RRT Backend Setup Guide
+# RRT Backend API
+
+Express.js backend for handling SOS alerts and Firebase Cloud Messaging.
+
+## Setup
+
+### 1. Install Dependencies
+```bash
+npm install
+```
+
+### 2. Environment Configuration
+```bash
+cp .env.example .env
+```
+
+Update `.env`:
+```env
+FIREBASE_SERVICE_ACCOUNT_PATH=./serviceaccount.json
+FIREBASE_DATABASE_URL=https://your-firebase-project.firebaseio.com
+PORT=3000
+```
+
+### 3. Firebase Service Account
+1. Go to Firebase Console → Project Settings → Service Accounts
+2. Generate private key
+3. Save as `serviceaccount.json` in backend root
+
+### 4. Run Server
+```bash
+node server.js
+```
+
+## API Endpoints
+
+### Health Check
+```
+GET /api/health
+Response: { "status": "OK", "firebase": "connected" }
+```
+
+### Send SOS Alert
+```
+POST /api/sos
+Body: {
+  "userId": "string",
+  "district": "string", 
+  "latitude": number,
+  "longitude": number,
+  "timestamp": "ISO string"
+}
+Response: { "success": true, "alertId": "string" }
+```
+
+## Local Development
+
+Use ngrok to expose local server:
+```bash
+ngrok http 3000
+# Use generated URL in Flutter app's ApiConfig
+```
+
+## Firebase Integration
+
+- Sends push notifications to district-based topics
+- Topic format: `district-{districtName}`
+- Requires valid service account JSON
+
+---
+For mobile app setup, see main README.md Setup Guide
 
 ## Prerequisites
 - Node.js 14+ installed
