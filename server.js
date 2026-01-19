@@ -275,6 +275,63 @@ app.post('/api/sos', async (req, res) => {
   }
 });
 
+// Get district information from coordinates
+app.post('/api/get-district', (req, res) => {
+  console.log('📍 District lookup request received:', req.body);
+  
+  try {
+    const { latitude, longitude } = req.body;
+    
+    // Validate required fields
+    if (latitude === undefined || longitude === undefined) {
+      return res.status(400).json({ 
+        error: 'Missing required fields',
+        required: ['latitude', 'longitude']
+      });
+    }
+
+    // Validate coordinates
+    if (typeof latitude !== 'number' || typeof longitude !== 'number') {
+      return res.status(400).json({ 
+        error: 'Invalid coordinate format',
+        message: 'Latitude and longitude must be numbers'
+      });
+    }
+
+    if (latitude < -90 || latitude > 90 || longitude < -180 || longitude > 180) {
+      return res.status(400).json({ 
+        error: 'Invalid coordinate values',
+        message: 'Latitude must be between -90 and 90, longitude between -180 and 180'
+      });
+    }
+
+    // Get district from coordinates
+    const district = getDistrictFromCoordinates(latitude, longitude);
+    
+    console.log(`✅ District determined: ${district} for coordinates (${latitude}, ${longitude})`);
+    
+    res.json({ 
+      success: true,
+      district: district,
+      fcm_topic: `district-${district}`,
+      coordinates: {
+        latitude: latitude,
+        longitude: longitude
+      },
+      timestamp: new Date().toISOString()
+    });
+    
+  } catch (error) {
+    console.error('❌ District lookup error:', error);
+    
+    res.status(500).json({ 
+      error: 'Failed to determine district',
+      message: error.message,
+      timestamp: new Date().toISOString()
+    });
+  }
+});
+
 // Test endpoint to manually trigger SOS (for testing)
 app.post('/api/test-sos', async (req, res) => {
   const testData = {
@@ -303,6 +360,7 @@ app.use('*', (req, res) => {
     availableEndpoints: [
       'GET /health',
       'POST /api/sos',
+      'POST /api/get-district',
       'POST /api/test-sos'
     ]
   });
@@ -323,6 +381,7 @@ app.listen(PORT, () => {
   console.log(`🚀 RRT Backend server running on port ${PORT}`);
   console.log(`📍 Health check: http://localhost:${PORT}/health`);
   console.log(`🆘 SOS endpoint: http://localhost:${PORT}/api/sos`);
+  console.log(`🗺️  District lookup: http://localhost:${PORT}/api/get-district`);
   console.log(`🧪 Test SOS: http://localhost:${PORT}/api/test-sos`);
   
   if (!firebaseInitialized) {
