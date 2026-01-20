@@ -135,7 +135,7 @@ app.post('/api/sos', async (req, res) => {
   }
 
   try {
-    const { sos_id, sos_type, location, userInfo, timestamp } = req.body;
+    const { sos_id, sos_type, location, userInfo, timestamp, sender_id } = req.body;
     
     // Validate required fields
     if (!sos_id || !sos_type || !location) {
@@ -159,18 +159,23 @@ app.post('/api/sos', async (req, res) => {
     if (sos_type === 'stop') {
       console.log(`🛑 Stopping SOS alert: ${sos_id}`);
       
+      // Extract user info for stop notification
+      const userName = userInfo?.name || 'Someone';
+      const userLocation = userInfo?.location || district.replace(/_/g, ' ').replace(/\b\w/g, l => l.toUpperCase());
+      
       // Send stop notification to all devices in the district
       const stopMessage = {
         topic: `district-${district}`,
         notification: {
           title: '✅ Emergency Resolved',
-          body: `Emergency situation in ${district.toUpperCase()} has been resolved`
+          body: `All good now. ${userName} • ${userLocation}.`
         },
         data: {
           type: 'sos_resolved',
           sos_id: sos_id,
           district: district,
-          timestamp: timestamp || Date.now().toString()
+          timestamp: timestamp || Date.now().toString(),
+          sender_id: sender_id || 'unknown'
         },
         android: {
           notification: {
@@ -211,12 +216,16 @@ app.post('/api/sos', async (req, res) => {
 
     console.log(`🚨 Sending SOS alert to district: ${district} (ID: ${sos_id})`);
     
+    // Extract user info for notification
+    const userName = userInfo?.name || 'Someone';
+    const userLocation = userInfo?.location || district.replace(/_/g, ' ').replace(/\b\w/g, l => l.toUpperCase());
+    
     // Prepare FCM message
     const message = {
       topic: `district-${district}`,
       notification: {
         title: '🚨 Emergency Alert',
-        body: `SOS alert in ${district.toUpperCase()} area`
+        body: `Help needed. ${userName} • ${userLocation}`
       },
       data: {
         type: 'sos_alert',
@@ -224,7 +233,8 @@ app.post('/api/sos', async (req, res) => {
         location: JSON.stringify(location),
         timestamp: timestamp || Date.now().toString(),
         userInfo: userInfo ? JSON.stringify(userInfo) : '{}',
-        alertId: sos_id
+        alertId: sos_id,
+        sender_id: sender_id || 'unknown'
       },
       android: {
         notification: {
